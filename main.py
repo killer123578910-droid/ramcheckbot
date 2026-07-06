@@ -13,6 +13,9 @@ header={
 }
 count=1
 while(True):
+    if count==28:
+        count+=1
+        continue
     ulr=f'{baseu}&page={count}'
     data =requests.get(ulr,headers=header)
     datae = data.json()
@@ -20,5 +23,5 @@ while(True):
         break
     sp=datae["list"]
     for i in sp:
-        print(f'{i["productName"]} {i["price"]}')
+        print(f'{count} {i["productName"]} {i["price"]}')
     count+=1
