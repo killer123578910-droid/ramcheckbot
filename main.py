@@ -1,6 +1,26 @@
 import requests
 import os
 from dotenv import load_dotenv
+from taobang import create_database,insert
+def crawling():
+    kq1={"Ram":[],
+         "SSD":[],
+         "VGA":[],
+         "MAIN":[]}
+    for key,value in matra.items():
+        kq=[]
+        count=1
+        while(True):
+            ulr=f'{baseu}&page={count}&category={key}'
+            data =requests.get(ulr,headers=header)
+            datae = data.json()
+            sp=datae["list"]
+            if not sp:
+                break
+            kq.extend(sp)
+            count+=1
+        kq1[value]=kq
+    return kq1
 load_dotenv()
 key=os.getenv("api")
 baseu=os.getenv("base_url")
@@ -11,17 +31,13 @@ header={
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest"
 }
-count=1
-while(True):
-    if count==28:
-        count+=1
-        continue
-    ulr=f'{baseu}&page={count}'
-    data =requests.get(ulr,headers=header)
-    datae = data.json()
-    if not datae["total"] or len(datae["list"])==0:
-        break
-    sp=datae["list"]
-    for i in sp:
-        print(f'{count} {i["productName"]} {i["price"]}')
-    count+=1
+
+matra={
+    283:"Ram",
+    284:"SSD",
+    279:"VGA",
+    278:"MAIN"}
+
+create_database()
+insert(crawling())
+
