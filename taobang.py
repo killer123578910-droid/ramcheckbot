@@ -1,9 +1,4 @@
 import sqlite3
-matra={
-    283:"Ram",
-    284:"SSD",
-    279:"VGA",
-    278:"MAIN"}
 def create_database():
     conn = sqlite3.connect("product.db")
     cursor = conn.cursor()
@@ -14,8 +9,9 @@ def create_database():
             name TEXT,
             quantity INTEGER,
             visiting INTEGER,
-            source_url TEXT,
-            categoty TEXT
+            source_url TEXT UNIQUE,
+            category TEXT,
+            time DATETIME
         )
     ''')
 
@@ -62,9 +58,44 @@ def create_database():
 def insert(arr):
     conn = sqlite3.connect("product.db")
     cursor = conn.cursor()
+    upsert_sql = """
+        INSERT INTO products (name, quantity, visiting, source_url, category, time)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(source_url) DO UPDATE SET
+            name        = excluded.name,
+            quantity    = excluded.quantity,
+            visiting    = excluded.visiting,
+            category    = excluded.category,
+            time        = excluded.time;
+    """
+    snapshot_sql ="""
+        INSERT INTO products_snapshot (product_id,time,prices,view,rating) VALUES (?, ?, ? ,? ,?)
+    """
+    crawltime=arr["crawl_time"]
     for key,value in arr.items():
-        for i in value:
-            cursor.execute("INSERT INTO products (name,quantity,visiting,source_url,categoty) VALUES (?, ?, ?, ?, ?)",(i["productName"],i["quantity"],i["visit"],i["productUrl"],key))
-
+        if key!="crawl_time":
+            for i in value:
+                name        = i.get("productName") or ""
+                price       = i.get("price") or 0
+                quantity    = i.get("quantity") or 0
+                visiting    = i.get("visit") or 0
+                source_url  = i.get("productUrl") or ""
+                rating      = i.get("rating")
+            
+                if not source_url:
+                    print(f"⚠️ Bỏ qua sản phẩm không có URL: {name}")
+                    continue
+                
+                cursor.execute(upsert_sql,(name,quantity,visiting,source_url,key,crawltime))
+                
+                
+                
+                product_id=cursor.lastrowid
+                if product_id==0:
+                    cursor.execute("SELECT id FROM products where source_url = ?",(source_url,))
+                    row=cursor.fetchone()
+                    product_id=row[0] if row else None
+                if product_id:
+                    cursor.execute(snapshot_sql,(product_id,crawltime,price,visiting,rating))
     conn.commit()
     conn.close()

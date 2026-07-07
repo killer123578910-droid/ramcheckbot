@@ -1,12 +1,15 @@
+from datetime import datetime
 import requests
 import os
 from dotenv import load_dotenv
 from taobang import create_database,insert
 def crawling():
+    crawldatetime=datetime.now().isoformat()
     kq1={"Ram":[],
          "SSD":[],
          "VGA":[],
-         "MAIN":[]}
+         "MAIN":[],
+         "crawl_time":crawldatetime}
     for key,value in matra.items():
         kq=[]
         count=1
