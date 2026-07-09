@@ -132,3 +132,55 @@ def simulate7days():
         n+=1
     conn.commit()
     conn.close()
+
+def pseudo_labeling():
+    conn = sqlite3.connect("product.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DISTINCT product_id FROM products_snapshot")
+    product_ids = [row[0] for row in cursor.fetchall()]
+
+    predict_sql = """
+        INSERT INTO predictions (product_id, time, rule_score, ml_prob, total_score, label)
+        VALUES (?,?,?,?,?,?)
+    """
+
+    for p_id in product_ids:
+        cursor.execute("""
+            SELECT prices, view, time
+            FROM products_snapshot
+            WHERE product_id = ?
+            ORDER BY time ASC        
+        """, (p_id,))
+        snapshots = cursor.fetchall()
+
+        if len(snapshots)<2:
+            continue
+
+        first_snap = snapshots[0]
+        last_snap = snapshots[-1]
+
+        price_start, view_start, time_start = first_snap[0], first_snap[1], first_snap[2]
+        price_end, view_end = last_snap[0], last_snap[1]
+
+        if view_start == 0: view_start = 1
+
+        price_pct_change = (price_end - price_start) / price_start
+        view_pct_change = (view_end - view_start) / view_start
+
+        if price_pct_change <= -0.2 and view_pct_change >= 0.5:
+            label = "1"
+            rule_score = 1.0
+        elif price_pct_change <= -0.1 and view_pct_change >= 0.2:
+            label = "0"
+            rule_score = 0.5
+        else:
+            label = "0"
+            rule_score = 0.1
+        
+        ml_prob = 0.0
+        total_score = rule_score
+
+        cursor.execute(predict_sql, (p_id, time_start, rule_score, ml_prob, total_score, label))
+    conn.commit()
+    conn.close()
