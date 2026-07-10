@@ -164,7 +164,8 @@ def pseudo_labeling():
         price_end, view_end = last_snap[0], last_snap[1]
 
         if view_start == 0: view_start = 1
-
+        if price_start == 0: price_start = 1
+        
         price_pct_change = (price_end - price_start) / price_start
         view_pct_change = (view_end - view_start) / view_start
 
